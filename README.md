@@ -1,7 +1,5 @@
 # Study Hours and Exam Score Regression
 
-[![Tests](https://github.com/Farscent/study-hours-regression/actions/workflows/tests.yml/badge.svg)](https://github.com/Farscent/study-hours-regression/actions/workflows/tests.yml)
-
 A regression analysis comparing a linear model with a training-mean baseline. The project applies CRISP-DM, separates training and test data, and evaluates prediction errors on held-out observations.
 
 ## Results
