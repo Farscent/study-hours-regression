@@ -1,58 +1,57 @@
+# Study Hours and Exam Score Regression
+
 [![Tests](https://github.com/Farscent/study-hours-regression/actions/workflows/tests.yml/badge.svg)](https://github.com/Farscent/study-hours-regression/actions/workflows/tests.yml)
 
-# Study Hours and Exam Scores: A Regression Exercise
+A regression analysis comparing a linear model with a training-mean baseline. The project applies CRISP-DM, separates training and test data, and evaluates prediction errors on held-out observations.
 
-A small machine learning project that explains linear regression from data preparation to evaluation. It uses one input variable and a simple baseline so the important ideas stay visible.
+## Results
 
-**Research question:** In a fictional dataset, can weekly study hours predict an exam score more accurately than always predicting the average training score?
-
-## Example results
-
-![Fitted line and held-out residuals for the synthetic dataset](docs/overview.png)
+![Fitted regression line and held-out residuals](docs/overview.png)
 
 | Model | Test MAE | Test RMSE | Test R² |
 |---|---:|---:|---:|
 | Linear regression | 5.89 | 6.87 | 0.768 |
 | Training-mean baseline | 13.72 | 17.39 | -0.489 |
 
-The model improves on the baseline on this fixed test split. MAE is measured in score points, not percent accuracy. These results describe a deliberately linear synthetic dataset. [Read the generated example report](docs/example-report.md).
+The linear model has lower prediction error on the fixed test split. MAE and RMSE are measured in score points. These results describe a **synthetic dataset with a deliberately linear relationship**. [View the example report](docs/example-report.md).
 
-## Learning objectives
+## Methodology
 
-- Separate features from a target.
-- Split observations into training and test sets.
-- Fill missing inputs without leaking test information.
-- Fit and interpret a straight-line regression model.
-- Compare a model with a meaningful baseline using MAE, RMSE, and R².
-
-## Dataset and scope
-
-The included [students.csv](data/students.csv) contains **120 synthetic observations**. Student IDs are fictional, and two study-hour values are deliberately missing.
-
-| Column | Meaning |
+| CRISP-DM phase | Implementation |
 |---|---|
-| student_id | Unique fictional ID, excluded from model inputs |
-| study_hours | Weekly study hours; the only model feature |
-| exam_score | Score out of 100; the prediction target |
+| Business understanding | Assess whether study hours improve predictions over a training-mean baseline. |
+| Data understanding | Inspect feature ranges, missing inputs, and the relationship with exam scores. |
+| Data preparation | Validate records; split 80/20; fit median imputation on training rows only. |
+| Modeling | Fit LinearRegression and DummyRegressor on the same training data. |
+| Evaluation | Compare MAE, RMSE, R², and residuals on the same held-out test set. |
+| Deployment | Export metrics, predictions, a report, and visualizations through a reproducible script. |
 
-[make_demo_data.py](make_demo_data.py) creates scores from <code>35 + 5 × study_hours + deterministic noise</code>. This known relationship makes the mechanics easy to inspect. It also means good performance is expected by design: it does not show that study hours alone can predict real academic performance.
+The split uses <code>random_state=42</code>, producing 96 training rows and 24 test rows. A scikit-learn pipeline fits the imputer and regression model together using only training data. Student IDs are excluded from model inputs.
 
-## CRISP-DM workflow
+The fitted model has the form:
 
-| Phase | Application |
+~~~text
+predicted score = intercept + slope × study hours
+residual = actual score − predicted score
+~~~
+
+The baseline predicts the training-set mean. R² uses the test-set mean as its reference, so the baseline's test R² can be negative.
+
+## Dataset
+
+[students.csv](data/students.csv) contains 120 fictional observations, including two missing study-hour values.
+
+| Field | Description |
 |---|---|
-| Business understanding | Test whether the model improves on a training-mean baseline. |
-| Data understanding | Inspect ranges, missing inputs, and the study-hours/score relationship. |
-| Data preparation | Validate records; split 80/20; learn the missing-value median from training rows only. |
-| Modeling | Fit LinearRegression and DummyRegressor with the same training data. |
-| Evaluation | Compare both models on the same held-out test set and inspect residuals. |
-| Deployment | Provide a reproducible script, a report, and an optional example prediction. |
+| student_id | Unique fictional ID, excluded from prediction |
+| study_hours | Weekly study hours; the sole input feature |
+| exam_score | Target score out of 100 |
 
-The split uses <code>random_state=42</code>: 96 training rows and 24 test rows. The imputer and model are combined in a scikit-learn pipeline. Fitting the pipeline on training rows prevents the median from learning anything about the test set.
+[make_demo_data.py](make_demo_data.py) generates scores from <code>35 + 5 × study_hours + deterministic noise</code>. The known relationship supports reproducibility; it does not establish a model of actual student performance.
 
-## Run the project
+## Installation and usage
 
-Use **Python 3.11, 3.12, or 3.13**. Clone the project and create an environment:
+Requires **Python 3.11–3.13**.
 
 ~~~bash
 git clone https://github.com/Farscent/study-hours-regression.git
@@ -60,97 +59,57 @@ cd study-hours-regression
 python -m venv .venv
 ~~~
 
-~~~powershell
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-~~~
-
-~~~bash
-# macOS / Linux
-source .venv/bin/activate
-~~~
+Activate the environment with <code>.\.venv\Scripts\Activate.ps1</code> on Windows PowerShell or <code>source .venv/bin/activate</code> on macOS/Linux.
 
 ~~~bash
 python -m pip install -r requirements.txt
 python model.py
 python model.py --hours 4
-python -m unittest discover -s tests -v
 ~~~
 
-If PowerShell blocks activation, call <code>.\.venv\Scripts\python.exe</code> directly. The included data runs offline after installation.
+The included data runs offline after dependency installation.
 
-## Understanding the model
-
-~~~text
-predicted score = intercept + slope × study hours
-residual = actual score − predicted score
-~~~
-
-The intercept is the fitted score at zero hours. The slope is the fitted change in score associated with one more hour. Association is not causation.
-
-The baseline always predicts the **training set's mean score**. A model that cannot beat this baseline on held-out rows has not demonstrated useful prediction for this exercise.
-
-| Metric | Plain-language interpretation |
-|---|---|
-| MAE | Average absolute prediction error, measured in score points; lower is better. |
-| RMSE | Error in score points that penalizes larger mistakes more strongly; lower is better. |
-| R² | Improvement relative to a test-mean reference; 1 is perfect, 0 matches that reference, and negative values are possible. |
-
-The DummyRegressor uses the **training** mean, while the R² formula uses the **test** mean as its reference. Therefore, the baseline's test R² need not be exactly zero. R² is not a percentage of predictions that are correct.
+The optional <code>--hours</code> argument returns a prediction from the training-fitted model and rejects values outside the observed training range.
 
 ## Outputs
 
 | File | Contents |
 |---|---|
-| outputs/report.md | Actual test metrics and a baseline comparison |
-| outputs/metrics.json | Metrics, split sizes, imputation value, slope, and intercept |
-| outputs/test_predictions.csv | Held-out actual scores, predictions, and residuals |
-| outputs/regression.png | Fitted line and held-out residual plot |
-
-Run the script to obtain the results rather than relying on a claimed accuracy percentage. The report states whether regression beats the baseline on the fixed test split.
-
-The <code>--hours</code> option uses the model fitted on training rows. It rejects inputs outside the observed training range to discourage extrapolation.
+| outputs/report.md | Model comparison and interpretation |
+| outputs/metrics.json | Evaluation metrics, split sizes, imputation value, and coefficients |
+| outputs/test_predictions.csv | Held-out scores, predictions, and residuals |
+| outputs/regression.png | Fitted line and residual plot |
 
 ## Limitations
 
-This dataset is synthetic, small, and deliberately linear. The evaluation demonstrates a workflow, not educational validity. A single split has sampling uncertainty, and the model does not express prediction intervals. Real outcomes depend on many factors not represented here. Predictions are not automatically constrained to 0–100.
+The data is small, synthetic, and deliberately linear. The results demonstrate the analysis pipeline rather than real-world predictive validity. Study hours alone omit many factors associated with academic performance, and association does not establish causation.
 
-The test set should be used for final evaluation, not repeated parameter selection. If you extend the project, use cross-validation within the training data before evaluating a final model on untouched test data.
+A single test split has sampling uncertainty. The model provides no prediction intervals and does not constrain predictions to 0–100. Any model selection would require validation within the training data while keeping the final test set untouched.
 
-## Suggested study order
+## Notebook
 
-Open [walkthrough.ipynb](walkthrough.ipynb), then follow <code>load_students()</code>, <code>build_model()</code>, and <code>train_and_evaluate()</code> in [model.py](model.py).
-
-Try these exercises:
-
-1. Calculate MAE manually for five held-out rows.
-2. Explain why student_id is not a useful feature.
-3. Increase the synthetic noise and observe how the metrics change.
-4. Use cross-validation on the training set and report the variability.
-
-**Questions to be able to answer:** What is data leakage? Why use a baseline? Why does a small training error not prove good generalization?
-
-## References
-
-- [scikit-learn: common pitfalls and data leakage](https://scikit-learn.org/stable/common_pitfalls.html)
-- [IBM: CRISP-DM overview](https://www.ibm.com/docs/en/spss-modeler/saas?topic=dm-crisp-help-overview)
-
-This is a student learning exercise, not a tool for evaluating actual students.
-
-
-## Optional notebook
-
-From this project folder, install the notebook tools and open the walkthrough:
+[View the analysis notebook](walkthrough.ipynb) for intermediate tables, visualizations, and saved outputs. To run it locally:
 
 ~~~bash
 python -m pip install -r requirements-notebook.txt
 python -m notebook walkthrough.ipynb
 ~~~
 
-Choose the project's Python environment and use **Run All**. The notebook imports the same tested functions as the script and adds explanations and intermediate tables.
+## Validation
 
-## Validation and license
+Tests cover training/test separation, training-only imputation, metric calculations, a known linear relationship, prediction bounds, and report generation. CI also reproduces the dataset and executes the notebook.
 
-The project has been tested locally on Windows with Python 3.13. GitHub Actions checks Python 3.11 and 3.12; see the status badge at the top for the current result. The analysis notebooks include saved example outputs and can be rerun from top to bottom.
+~~~bash
+python -m unittest discover -s tests -v
+~~~
 
-Code and the synthetic demonstration data are available under the [MIT License](LICENSE).
+GitHub Actions runs the checks on Python 3.11 and 3.12. The project has also been verified on Windows with Python 3.13.
+
+## References
+
+- [scikit-learn: common pitfalls and data leakage](https://scikit-learn.org/stable/common_pitfalls.html)
+- [IBM: CRISP-DM overview](https://www.ibm.com/docs/en/spss-modeler/saas?topic=dm-crisp-help-overview)
+
+## License
+
+Code and synthetic demonstration data are available under the [MIT License](LICENSE).
